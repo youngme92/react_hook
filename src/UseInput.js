@@ -111,6 +111,44 @@ const useBeforeLeave = onBefore => {
   }
 };
 ////////////////////
+//useFadeIn 
+const useFadeIn = (duration = 1, delay = 0) => {
+  const element = useRef();
+  useEffect(() => {
+    if (element.current) {
+      const { current } = element;
+      current.style.transition = `opacity ${duration}s ease-in-out ${delay}s`;
+      current.style.opacity = 1;
+    }
+  }, []);
+  if (typeof duration !== "number" || typeof delay !== "number") {
+    return;
+  }
+  return { ref: element, style: { opacity: 0 } };
+};
+/////////////////////
+// useNetwork
+const useNetwork = onChange => {
+  const [status, setStatus] = useState(navigator.onLine);
+  const handleChange = () => {
+    if (typeof onChange === "function") {
+      onChange(navigator.onLine);
+    }
+    setStatus(navigator.onLine);
+  };
+
+  useEffect(() => {
+    window.addEventListener("online", handleChange);
+    window.addEventListener("offline", handleChange);
+    return () => {
+      window.removeEventListener("online", handleChange);
+      window.removeEventListener("offline", handleChange);
+    };
+  }, []);
+
+  return status;
+};
+//////////////////////
 // count 
 function UseInput() {
   const [count, setCount] = useState(0);
@@ -159,6 +197,16 @@ function UseInput() {
   };
   useBeforeLeave(begForLife);
   ///////////////////////
+  // useFadeIn
+  const fadeInH1 = useFadeIn(1, 2);
+  const fadeInH2 = useFadeIn(2, 5);
+  /////////////////////
+  // useNetwork
+  const handleNetworkChange = onLine => {
+    console.log(onLine ? "onLine" : "offLine");
+  };
+  const onLine = useNetwork(handleNetworkChange);
+  ////////////////////
   return (
     <div className="App">
       <h1>Hello CodeSandbox</h1>
@@ -184,6 +232,11 @@ function UseInput() {
       {/* usePreventLeave */}
       <button onClick={enablePrevent}>enablePrevent</button>
       <button onClick={disablePrevent}>disablePrevent</button>
+      {/* useFadeIn */}
+      <h1 {...fadeInH1}>Hello CodeSandbox</h1>
+      <h2 {...fadeInH2}>Start editing to see some magic happen!</h2>
+      {/* useNetwork */}
+      <h1>{onLine ? "onLine" : "offLine"}</h1>
     </div>
   );
 }
