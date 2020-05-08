@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-
+import defaultAxios from 'axios';
 //useTitle useEffect/////
 const useTitle = initialTitle => {
   const [title, setTitle] = useState(initialTitle);
@@ -149,6 +149,83 @@ const useNetwork = onChange => {
   return status;
 };
 //////////////////////
+// useScroll
+const useScroll = () => {
+  const [state, setState] = useState({
+    x: 0,
+    y: 0
+  });
+  const onScroll = () => {
+    setState({ x: window.scrollX, y: window.scrollY });
+  };
+  useEffect(() => {
+    window.addEventListener("scroll", onScroll);
+  }, []);
+  return state;
+};
+//////////////////////
+// useFullScreen
+const useFullscreen = callback => {
+  const element = useRef();
+  const runCb = isFull => {
+    if (callback && typeof callback === "function") {
+      callback(isFull);
+    }
+  };
+  const triggerFull = () => {
+    if (element.current) {
+      element.current.requestFullscreen();
+    }
+    runCb(true);
+  };
+  const exitFull = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+    runCb(false);
+  };
+  return { element, triggerFull, exitFull };
+};
+///////////////////////
+// useAxios
+const useAxios = (opts, axiosInstance = defaultAxios) => {
+  const [state, setState] = useState({
+    loading: true,
+    error: null,
+    data: null
+  });
+  const [trigger, setTrigger] = useState(0);
+
+  const refetch = () => {
+    setState({
+      ...state,
+      loading: true
+    });
+    setTrigger(Date.now());
+  };
+  useEffect(() => {
+    axiosInstance(opts)
+      .then(data => {
+        setState({
+          ...state,
+          loading: false,
+          data
+        });
+      })
+      .catch(error => {
+        setState({
+          ...state,
+          loading: false,
+          error
+        });
+      });
+  }, [trigger]);
+  if (!opts.url) {
+    return;
+  }
+  return { ...state, refetch };
+};
+///////////////////////
 // count 
 function UseInput() {
   const [count, setCount] = useState(0);
@@ -207,8 +284,22 @@ function UseInput() {
   };
   const onLine = useNetwork(handleNetworkChange);
   ////////////////////
+  // useScroll
+  const { y } = useScroll();
+  ////////////////////
+  // useFullscreen
+  const onFulls = isFull => {
+    console.log(isFull ? "It is Full" : "Isn't Full");
+  };
+  const { element, triggerFull, exitFull } = useFullscreen(onFulls);
+  ////////////////////
+  // useAxios
+  const { loading, data, error, refetch } = useAxios({
+    url: "https://yts.mx/api/v2/list_movies.json"
+  });
+  ////////////////////////
   return (
-    <div className="App">
+    <div className="App" style={{ height: "1000vh" }}>
       <h1>Hello CodeSandbox</h1>
       <h2>{count}</h2>
       <input placeholder="name" {...name} />  
@@ -237,6 +328,20 @@ function UseInput() {
       <h2 {...fadeInH2}>Start editing to see some magic happen!</h2>
       {/* useNetwork */}
       <h1>{onLine ? "onLine" : "offLine"}</h1>
+      {/* useScroll */}
+      <h1 style={{ position: "fixed", color: y > 100 ? "red" : "blue" }}>HI</h1>
+      {/* useFullScreen */}
+      <div ref={element}>
+        <img src="https://images.unsplash.com/photo-1559745136-655039d6be9c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=800&q=60" />
+        <div>
+          <button onClick={exitFull}>ExitScreen</button>
+        </div>
+      </div>
+      <button onClick={triggerFull}>FullScreen</button>
+      {/* useAxios */}
+      <h1>{data && data.status}</h1>
+      <h2>{loading && "Loading"}</h2>
+      <button onClick={refetch}>refetch</button>
     </div>
   );
 }
